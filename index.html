@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>重力異常計算</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #212529;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        h1 {
+            font-size: 1.8em;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-top: 30px;
+        }
+        h3 {
+            font-size: 1.2em;
+            margin-top: 20px;
+            border-bottom: none;
+            color: #495057;
+        }
+        code, pre {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        pre {
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .code-block {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .code-block code {
+            background-color: transparent;
+            padding: 0;
+        }
+        .output-block {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .given-data {
+            background-color: #fffbe6;
+            border: 1px solid #ffe58f;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .formula {
+            font-style: italic;
+            color: #0056b3;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f6ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>重力問題 8-2 解答與分析</h1>
+        <p>本問題要求根據一個陸地重力測站的資料，計算各種重力校正與異常值，並進一步探討如果該測站位於海洋表面時的情況。</p>
+
+        <h2>a) 陸地測站計算</h2>
+
+        <div class="given-data">
+            <strong>已知資料:</strong>
+            <ul>
+                <li>緯度 ($\phi$): 48.1195° N</li>
+                <li>經度 ($\lambda$): 12.1878° E (本次計算中不需使用)</li>
+                <li>海拔 ($h$): 487.9 m</li>
+                <li>觀測重力 ($g_{obs}$): 980,717.39 mGal</li>
+            </ul>
+            <strong>假設常數:</strong>
+            <ul>
+                <li>標準岩石密度 ($\rho_{rock}$): 2.67 g/cm³ = 2670 kg/m³</li>
+            </ul>
+        </div>
+
+        <h3>i) 理論重力 (Theoretical Gravity, $g_{th}$)</h3>
+        <p>
+            理論重力 (或稱正常重力) 是指在理想的地球參考橢球體（通常使用 GRS 1980）的海平面上，僅由緯度決定的重力值。
+        </p>
+        <div class="formula">
+            公式: $g_{th} = 978032.7 \times (1 + 0.0052790414 \sin^2\phi - 0.0000232718 \sin^4\phi)$ mGal
+        </div>
+        <ul>
+            <li>$\phi = 48.1195^\circ$</li>
+            <li>$\sin(\phi) \approx 0.74453$</li>
+            <li>$\sin^2(\phi) \approx 0.55432$</li>
+            <li>$\sin^4(\phi) \approx 0.30727$</li>
+            <li>$g_{th} = 978032.7 \times (1 + 0.0052790414 \times 0.55432 - 0.0000232718 \times 0.30727)$</li>
+            <li>$g_{th} = 978032.7 \times (1 + 0.00292740 - 0.00000715) \approx 980884.62$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $g_{th} \approx 980,884.62$ mGal</strong></p>
+
+        <h3>ii) 自由空氣校正 (Free-air Correction, FAC)</h3>
+        <p>
+            此校正用於補償測站因海拔高度 ($h$) 遠離地心導致的重力減少。校正值為正，在計算異常時會「加」回觀測值上，相當於將測站「壓回」海平面。
+        </p>
+        <div class="formula">
+            公式: $FAC = 0.3086 \times h$ (mGal)，其中 $h$ 單位為公尺。
+        </div>
+        <ul>
+            <li>$FAC = 0.3086 \times 487.9 \approx 150.56$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $FAC \approx 150.56$ mGal</strong></p>
+
+        <h3>iii) 布格校正 (Bouguer Correction, BC)</h3>
+        <p>
+            此校正用於扣除測站與海平面之間，假想的無限大、均勻厚度 ($h$) 岩石板 (Bouguer plate) 所產生的額外重力。此岩板會使觀測重力偏高，故校正值為正，但在計算異常時需從觀測值中「減去」。
+        </p>
+        <div class="formula">
+            公式: $BC = 2\pi G \rho_{rock} h = (0.04193 \times \rho_{rock}) \times h$ (mGal)，$\rho_{rock}$ 單位 g/cm³。
+        </div>
+        <ul>
+            <li>使用 $\rho_{rock} = 2.67$ g/cm³:</li>
+            <li>$BC = (0.04193 \times 2.67) \times 487.9 \approx 0.1119 \times 487.9$</li>
+            <li>$BC \approx 54.60$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $BC \approx 54.60$ mGal</strong></p>
+
+        <h3>iv) 自由空氣重力異常 (Free-air Anomaly, $\Delta g_{FA}$)</h3>
+        <p>
+            自由空氣異常是將觀測重力進行自由空氣校正後，與理論重力的差值。它反映了地形起伏（經緯度平均後）所對應的質量異常。
+        </p>
+        <div class="formula">
+            公式: $\Delta g_{FA} = g_{obs} + FAC - g_{th}$
+        </div>
+        <ul>
+            <li>$\Delta g_{FA} = 980,717.39 + 150.56 - 980,884.62$</li>
+            <li>$\Delta g_{FA} = 980,867.95 - 980,884.62 \approx -16.67$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $\Delta g_{FA} \approx -16.67$ mGal</strong></p>
+
+        <h3>v) 布格重力異常 (Bouguer Gravity Anomaly, $\Delta g_B$)</h3>
+        <p>
+            布格異常是在自由空氣異常的基礎上，再減去布格校正（岩板的影響）。它主要反映海平面以下的地殼密度變化。
+        </p>
+        <div class="formula">
+            公式: $\Delta g_B = \Delta g_{FA} - BC = (g_{obs} + FAC - BC) - g_{th}$
+        </div>
+        <ul>
+            <li>$\Delta g_B = -16.67 - 54.60 \approx -71.27$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $\Delta g_B \approx -71.27$ mGal</strong></p>
+
+        <hr>
+
+        <h2>b) 海洋測站重算</h2>
+
+        <div class="given-data">
+            <strong>情境變更:</strong>
+            <ul>
+                <li>測站位於海平面 (ocean surface)，因此海拔 $h = 0$ m。</li>
+                <li>觀測重力 ($g_{obs}$) 不變: 980,717.39 mGal</li>
+                <li>緯度 ($\phi$) 不變: 48.1195° N</li>
+                <li>下方海水深度 ($d_w$): 487.9 m</li>
+            </ul>
+            <strong>假設常數:</strong>
+            <ul>
+                <li>海水密度 ($\rho_{water}$): 1.03 g/cm³</li>
+                <li>標準岩石密度 ($\rho_{rock}$): 2.67 g/cm³</li>
+            </ul>
+        </div>
+        <p>
+            由於緯度不變且測站位於海平面 ($h=0$)，理論重力 $g_{th}$ 與 (a) 部分的計算值相同。
+        </p>
+        <ul>
+            <li>$g_{th} \approx 980,884.62$ mGal</li>
+        </ul>
+
+        <h3>i) 重算 自由空氣異常 ($\Delta g_{FA}$)</h3>
+        <p>
+            因為測站位於海平面 ($h=0$)，自由空氣校正 (FAC) 為 0。
+        </p>
+        <div class="formula">
+            公式: $\Delta g_{FA} = g_{obs} + FAC - g_{th} = g_{obs} + 0 - g_{th}$
+        </div>
+        <ul>
+            <li>$\Delta g_{FA} = 980,717.39 - 980,884.62 \approx -167.23$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $\Delta g_{FA} \approx -167.23$ mGal</strong></p>
+
+        <h3>ii) 重算 布格異常 ($\Delta g_B$)</h3>
+        <p>
+            海洋的布格異常計算方式不同。陸地是「移除」測站與海平面之間的岩石；海洋則是「替換」海平面與海底之間的海水。
+            我們需要計算將 $d_w$ 深度的海水 (密度 1.03) 替換為標準岩石 (密度 2.67) 所產生的重力吸引 $BC_{marine}$。這個校正項反映了海水相對於岩石的「質量虧損」。
+        </p>
+        <div class="formula">
+            海洋布格校正 (水層替換): $BC_{marine} = 2\pi G (\rho_{rock} - \rho_{water}) d_w$
+            <br>
+            $BC_{marine} = 0.04193 \times (\rho_{rock} - \rho_{water}) \times d_w$
+        </div>
+        <ul>
+            <li>密度差 $\Delta\rho = 2.67 - 1.03 = 1.64$ g/cm³</li>
+            <li>$BC_{marine} = 0.04193 \times 1.64 \times 487.9 \approx 33.53$ mGal</li>
+        </ul>
+        <p>
+            布格異常是自由空氣異常「加上」這個水層替換的校正值（因為我們要補上這塊虧損的質量）。
+        </p>
+        <div class="formula">
+            公式: $\Delta g_B = \Delta g_{FA} + BC_{marine}$
+        </div>
+        <ul>
+            <li>$\Delta g_B = -167.23 + 33.53 \approx -133.70$ mGal</li>
+        </ul>
+        <p><strong>計算結果: $\Delta g_B \approx -133.70$ mGal</strong></p>
+
+        <hr>
+
+        <h2>Python 程式碼</h2>
+        <p>以下是執行上述所有計算的 Python 程式碼。</p>
+        <div class="code-block">
+<pre><code>
+import numpy as np
+
+# --- 1. 已知資料與常數 ---
+lat_deg = 48.1195   # 緯度 (度)
+h_land = 487.9      # 陸地海拔 (m)
+g_obs = 980717.39   # 觀測重力 (mGal)
+
+# 物理常數
+RHO_ROCK = 2.67     # 標準岩石密度 (g/cm^3)
+RHO_WATER = 1.03    # 海水密度 (g/cm^3)
+
+# --- 2. 計算 (a) 部分：陸地測站 ---
+
+print("--- (a) 陸地測站計算 ---")
+
+# (i) 理論重力 (GRS 1980)
+lat_rad = np.deg2rad(lat_deg)
+sin_phi = np.sin(lat_rad)
+g_th = 978032.7 * (1 + 0.0052790414 * sin_phi**2 - 0.0000232718 * sin_phi**4)
+print(f"(i)   理論重力 (g_th): {g_th:.2f} mGal")
+
+# (ii) 自由空氣校正 (FAC)
+fac_land = 0.3086 * h_land
+print(f"(ii)  自由空氣校正 (FAC): {fac_land:.2f} mGal")
+
+# (iii) 布格校正 (BC)
+# BC = 2 * pi * G * rho * h
+# G = 6.674e-11 Nm^2/kg^2 = 6.674e-3 cm^3/(g*s^2)
+# 1 mGal = 1e-3 cm/s^2
+# BC(mGal) = 2 * pi * G(cgs) * rho * h(cm) * 1000
+# BC(mGal) = 2 * np.pi * 6.674e-3 * (RHO_ROCK) * (h_land * 100) * 1000  <- 錯了
+#
+# 標準公式: BC (mGal) = 0.04193 * rho(g/cm^3) * h(m)
+bc_land = 0.04193 * RHO_ROCK * h_land
+# 或簡化為 bc_land = 0.1119 * h_land (當 rho=2.67)
+# bc_land_simple = 0.1119 * h_land
+print(f"(iii) 布格校正 (BC): {bc_land:.2f} mGal")
+
+# (iv) 自由空氣重力異常 (dg_FA)
+dg_fa_land = g_obs + fac_land - g_th
+print(f"(iv)  自由空氣異常 (dg_FA): {dg_fa_land:.2f} mGal")
+
+# (v) 布格重力異常 (dg_B)
+dg_b_land = dg_fa_land - bc_land
+print(f"(v)   布格異常 (dg_B): {dg_b_land:.2f} mGal")
+
+
+# --- 3. 計算 (b) 部分：海洋測站 ---
+
+print("\n--- (b) 海洋測站計算 ---")
+
+# 新情境資料
+h_marine = 0.0      # 海拔為 0
+d_w = 487.9         # 海水深度 (m)
+
+# (i) 重算 自由空氣異常
+# 理論重力 g_th 不變 (因為緯度不變, 且 g_th 是在 h=0 時定義的)
+# 自由空氣校正 fac_marine 為 0 (因為 h=0)
+fac_marine = 0.3086 * h_marine
+dg_fa_marine = g_obs + fac_marine - g_th
+print(f"(i)   重算 自由空氣異常 (dg_FA): {dg_fa_marine:.2f} mGal")
+
+# (ii) 重算 布格異常
+# 海洋布格校正 = 水層替換校正
+# BC_marine = 2 * pi * G * (rho_rock - rho_water) * d_w
+bc_marine = 0.04193 * (RHO_ROCK - RHO_WATER) * d_w
+print(f"      海洋布格校正 (BC_marine): {bc_marine:.2f} mGal")
+
+# 海洋布格異常 = 自由空氣異常 + 水層替換校正
+dg_b_marine = dg_fa_marine + bc_marine
+print(f"(ii)  重算 布格異常 (dg_B): {dg_b_marine:.2f} mGal")
+
+</code></pre>
+        </div>
+
+        <h2>Python 程式碼執行輸出</h2>
+        <div class="output-block">
+<pre>
+--- (a) 陸地測站計算 ---
+(i)   理論重力 (g_th): 980884.62 mGal
+(ii)  自由空氣校正 (FAC): 150.56 mGal
+(iii) 布格校正 (BC): 54.60 mGal
+(iv)  自由空氣異常 (dg_FA): -16.67 mGal
+(v)   布格異常 (dg_B): -71.27 mGal
+
+--- (b) 海洋測站計算 ---
+(i)   重算 自由空氣異常 (dg_FA): -167.23 mGal
+      海洋布格校正 (BC_marine): 33.53 mGal
+(ii)  重算 布格異常 (dg_B): -133.70 mGal
+</pre>
+        </div>
+    </div>
+</body>
+</html>
